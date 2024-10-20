@@ -39,15 +39,21 @@ class ETM(nn.Module):
 
         ## define the word embedding matrix \rho
         if train_embeddings:
+            # network to give embedding for a given word
             # TODO: consider changing this to a deeper network
             self.rho = nn.Linear(rho_size, vocab_size, bias=False)
         else:
+            # reading in pretrained embeddings
             num_embeddings, emb_size = embeddings.size()
+
+            # embedding matrix holding embeddings for vocab
             rho = nn.Embedding(num_embeddings, emb_size)
+
             self.rho = embeddings.clone().float().to(self.device)
 
         ## define the matrix containing the topic embeddings
         # matrix containing embeddings for each topic. Big P in the paper
+        # TODO: consider making this deeper
         self.alphas = nn.Linear(rho_size, num_topics, bias=False)#nn.Parameter(torch.randn(rho_size, num_topics))
 
         ## define variational distribution for \theta_{1:D} via amortizartion

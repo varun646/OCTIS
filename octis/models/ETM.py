@@ -153,15 +153,22 @@ class ETM(BaseETM):
 
     def _train_epoch(self, epoch):
         self.data_list = []
+
+        # set model to train
         self.model.train()
+
         acc_loss = 0
         acc_kl_theta_loss = 0
         cnt = 0
         indices = torch.arange(0, len(self.train_tokens))
         indices = torch.split(indices, self.hyperparameters['batch_size'])
+
+        # minibatch
         for idx, ind in enumerate(indices):
             self.optimizer.zero_grad()
             self.model.zero_grad()
+
+            # choose minibatch
             data_batch = data.get_batch(
                 self.train_tokens, self.train_counts, ind,
                 len(self.vocab.keys()), self.device)
