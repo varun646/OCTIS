@@ -66,6 +66,14 @@ class ETM(nn.Module):
         self.mu_q_theta = nn.Linear(t_hidden_size, num_topics, bias=True)
         self.logsigma_q_theta = nn.Linear(t_hidden_size, num_topics, bias=True)
 
+        # TODO: check layers, depth, hidden layer size, output size, activation functions
+        self.topic_distribution = nn.Sequential(
+            nn.Linear(self.emb_size, self.emb_size*4),
+            nn.ReLU(),
+            nn.Linear(self.emb_size*4, vocab_size),
+            nn.Softmax()
+        )
+
     def get_activation(self, act):
         if act == 'tanh':
             act = nn.Tanh()
