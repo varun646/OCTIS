@@ -41,7 +41,14 @@ class ETM(nn.Module):
         if train_embeddings:
             # network to give embedding for a given word
             # TODO: consider changing this to a deeper network
-            self.rho = nn.Linear(rho_size, vocab_size, bias=False)
+            # self.rho = nn.Linear(rho_size, vocab_size, bias=False)
+            self.rho = nn.Sequential(
+                nn.Linear(rho_size, rho_size*4),
+                nn.ReLU(),
+                nn.Linear(rho_size*4, rho_size * 64),
+                nn.ReLU(),
+                nn.Linear(rho_size * 64, vocab_size),
+            )
         else:
             # reading in pretrained embeddings
             num_embeddings, emb_size = embeddings.size()
@@ -56,6 +63,14 @@ class ETM(nn.Module):
         # TODO: consider making this deeper
         self.alphas = nn.Linear(rho_size, num_topics, bias=False)#nn.Parameter(torch.randn(rho_size, num_topics))
 
+        self.alphas = nn.Sequential(
+            nn.Linear(rho_size, rho_size * 16),
+            nn.ReLU(),
+            nn.Linear(rho_size * 16, rho_size * 64),
+            nn.ReLU(),
+            nn.Linear(rho_size * 64, num_topics),
+        )
+
         ## define variational distribution for \theta_{1:D} via amortizartion
         self.q_theta = nn.Sequential(
                 nn.Linear(vocab_size, t_hidden_size),  self.theta_act,
@@ -63,8 +78,25 @@ class ETM(nn.Module):
             )
 
         # parameters for topic proportions
-        self.mu_q_theta = nn.Linear(t_hidden_size, num_topics, bias=True)
-        self.logsigma_q_theta = nn.Linear(t_hidden_size, num_topics, bias=True)
+        # self.mu_q_theta = nn.Linear(t_hidden_size, num_topics, bias=True)
+
+        self.mu_q_theta = nn.Sequential(
+            nn.Linear(t_hidden_size, t_hidden_size * 16, bias=True),
+            nn.ReLU(),
+            nn.Linear(t_hidden_size * 16, t_hidden_size * 64, bias=True),
+            nn.ReLU(),
+            nn.Linear(t_hidden_size * 64, num_topics, bias=True),
+        )
+
+
+        # self.logsigma_q_theta = nn.Linear(t_hidden_size, num_topics, bias=True)
+        self.logsigma_q_theta = nn.Sequential(
+            nn.Linear(t_hidden_size, t_hidden_size * 16, bias=True),
+            nn.ReLU(),
+            nn.Linear(t_hidden_size * 16, t_hidden_size * 64, bias=True),
+            nn.ReLU(),
+            nn.Linear(t_hidden_size * 64, num_topics, bias=True),
+        )
 
     def get_activation(self, act):
         if act == 'tanh':
