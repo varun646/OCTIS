@@ -12,25 +12,48 @@ class ETM(nn.Module):
         super(ETM, self).__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         ## define hyperparameters
+
+        # K in paper
         self.num_topics = num_topics
+
+        # V in paper
         self.vocab_size = vocab_size
+
+        # hidden layer size for determining topic proportions (unsure ?)
         self.t_hidden_size = t_hidden_size
+
+        # size of the embedding space
         self.rho_size = rho_size
+
+
         self.enc_drop = enc_drop
+
+        # size of the embedding space if we are using pre-trained embeddings
         self.emb_size = emb_size
+
+        # dropout
         self.t_drop = nn.Dropout(enc_drop)
 
+        # activation
         self.theta_act = self.get_activation(theta_act)
 
         ## define the word embedding matrix \rho
         if train_embeddings:
+            # network to give embedding for a given word
+            # TODO: consider changing this to a deeper network
             self.rho = nn.Linear(rho_size, vocab_size, bias=False)
         else:
+            # reading in pretrained embeddings
             num_embeddings, emb_size = embeddings.size()
+
+            # embedding matrix holding embeddings for vocab
             rho = nn.Embedding(num_embeddings, emb_size)
+
             self.rho = embeddings.clone().float().to(self.device)
 
         ## define the matrix containing the topic embeddings
+        # matrix containing embeddings for each topic. Big P in the paper
+        # TODO: consider making this deeper
         self.alphas = nn.Linear(rho_size, num_topics, bias=False)#nn.Parameter(torch.randn(rho_size, num_topics))
 
         ## define variational distribution for \theta_{1:D} via amortizartion
@@ -38,8 +61,18 @@ class ETM(nn.Module):
                 nn.Linear(vocab_size, t_hidden_size),  self.theta_act,
                 nn.Linear(t_hidden_size, t_hidden_size), self.theta_act,
             )
+
+        # parameters for topic proportions
         self.mu_q_theta = nn.Linear(t_hidden_size, num_topics, bias=True)
         self.logsigma_q_theta = nn.Linear(t_hidden_size, num_topics, bias=True)
+
+        # TODO: check layers, depth, hidden layer size, output size, activation functions
+        self.topic_distribution = nn.Sequential(
+            nn.Linear(self.emb_size, self.emb_size*4),
+            nn.ReLU(),
+            nn.Linear(self.emb_size*4, vocab_size),
+            nn.Softmax()
+        )
 
     def get_activation(self, act):
         if act == 'tanh':
